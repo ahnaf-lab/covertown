@@ -5,11 +5,13 @@ is a building sized by lines of code and colored by coverage percentage,
 navigable with the arrow keys. Built for developers who want to feel their
 blind spots, not just read a percentage.
 
-This milestone builds the foundation: parsing lcov and Istanbul JSON coverage
-reports into a per-file `{loc, coveragePct}` model, plus the same data
-arranged into a directory tree so a folder's size and color can be derived
-the same way a file's can. The walkable city view itself lands in a later
-milestone.
+So far this covers parsing lcov and Istanbul JSON coverage reports into a
+per-file `{loc, coveragePct}` model, arranging that into a directory tree, and
+packing the tree into a deterministic, treemap-style grid: every file and
+directory gets an integer `{x, y, width, height}` footprint sized by lines of
+code, with each directory's children packed entirely inside that directory's
+own rectangle so the layout stays grouped by folder. The walkable rendering
+itself lands in a later milestone.
 
 ## Install
 
@@ -30,16 +32,23 @@ node bin/covertown.js path/to/coverage-final.json  # Istanbul raw
 node bin/covertown.js path/to/coverage-summary.json  # Istanbul summary
 ```
 
-Or use the parser as a library:
+Or use the parser and layout engine as a library:
 
 ```js
 import { parseCoverage } from './src/index.js';
+import { buildLayout } from './src/layout.js';
 import { readFileSync } from 'node:fs';
 
 const { files, tree } = parseCoverage(readFileSync('coverage.info', 'utf8'));
 
 // files: { "src/a.js": { loc: 10, coveragePct: 70 }, ... }
 // tree:  { name: ".", type: "dir", loc, coveragePct, children: [...] }
+
+const city = buildLayout(tree, { width: 80, height: 24 });
+
+// city: the same tree, with every node given an integer
+// { x, y, width, height } footprint sized by lines of code, packed so each
+// directory's children stay entirely inside that directory's own rectangle.
 ```
 
 Both lcov (`SF`/`LF`/`LH`/`DA` records) and Istanbul JSON (both the raw
