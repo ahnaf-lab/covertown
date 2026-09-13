@@ -62,6 +62,26 @@ test('frame has exactly one line per layout row and every line is the same visib
   }
 });
 
+test('a highlighted rectangle is drawn in reverse video without changing colour', () => {
+  const tree = buildTree({ 'a.js': { loc: 5, covered: 5 } }); // 100% -> green
+  const layout = buildLayout(tree, { width: 3, height: 1 });
+
+  const plain = renderFrame(layout);
+  const highlighted = renderFrame(layout, { highlight: { x: 0, y: 0, width: 3, height: 1 } });
+
+  assert.equal(plain, '\u001b[32m\u2591\u2591\u2591\u001b[0m');
+  assert.equal(highlighted, '\u001b[32;7m\u2591\u2591\u2591\u001b[0m');
+});
+
+test('an out-of-range highlight does not throw or affect output', () => {
+  const tree = buildTree({ 'a.js': { loc: 5, covered: 5 } });
+  const layout = buildLayout(tree, { width: 3, height: 1 });
+
+  const frame = renderFrame(layout, { highlight: { x: 50, y: 50, width: 2, height: 2 } });
+
+  assert.equal(frame, renderFrame(layout));
+});
+
 test('rendering the same layout twice is byte-for-byte identical', () => {
   const tree = buildTree({
     'src/a.js': { loc: 40, covered: 10 },

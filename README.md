@@ -11,11 +11,15 @@ packing the tree into a deterministic, treemap-style grid (every file and
 directory gets an integer `{x, y, width, height}` footprint sized by lines of
 code, with each directory's children packed entirely inside that directory's
 own rectangle so the layout stays grouped by folder), and drawing that grid
-as a static ANSI frame: every file becomes a rectangular building whose fill
-glyph gets denser as its line count grows and whose colour is bucketed from
-its coverage percentage (red under 50%, yellow up to 80%, green from 80%).
-Walking around the city — scrolling, a cursor, arrow-key navigation — lands
-in a later milestone; today it draws one frame and stops.
+as an ANSI frame: every file becomes a rectangular building whose fill glyph
+gets denser as its line count grows and whose colour is bucketed from its
+coverage percentage (red under 50%, yellow up to 80%, green from 80%). When
+run at a real terminal, the city is walkable: arrow keys move a highlighted
+cursor between buildings, enter drills into a directory as its own district,
+and backspace steps back out — the breadcrumb trail and the selected
+building's stats are printed above and below each frame. Run somewhere
+without a TTY (or pass `--static`), and it just draws a single frame and
+exits.
 
 ## Install
 
@@ -28,7 +32,7 @@ standard library.
 
 ## Usage
 
-Draw a coverage report as a city, sized to the current terminal:
+Walk a coverage report as a city, sized to the current terminal:
 
 ```
 node bin/covertown.js path/to/coverage.info          # lcov
@@ -36,11 +40,16 @@ node bin/covertown.js path/to/coverage-final.json    # Istanbul raw
 node bin/covertown.js path/to/coverage-summary.json  # Istanbul summary
 ```
 
+When stdin and stdout are both a real terminal, this starts interactively:
+arrow keys move between buildings, enter drills into a directory as its own
+district, backspace steps back out, and `q` (or Ctrl-C) quits.
+
 Options:
 
 ```
 node bin/covertown.js coverage.info --width 100 --height 30  # override the frame size
 node bin/covertown.js coverage.info --json                   # print the parsed model instead of drawing it
+node bin/covertown.js coverage.info --static                 # draw one frame and exit, even at a real terminal
 ```
 
 Or use the parser, layout engine and renderer as a library:

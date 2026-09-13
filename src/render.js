@@ -3,8 +3,9 @@
 // which still occupies its own footprint) becomes a rectangular "building".
 // The fill glyph encodes its lines of code — more code, denser fill, taller
 // looking building — and its colour is bucketed from its coverage
-// percentage. This only draws one static frame from a layout; walking /
-// scrolling around the city lands in a later milestone.
+// percentage. This draws one frame at a time; `bin/covertown.js` calls it
+// again after every keypress (see navigate.js) to redraw the city as the
+// cursor moves, with the current selection passed in as `options.highlight`.
 
 const RESET = '\x1b[0m';
 
@@ -69,30 +70,62 @@ function paint(node, grid) {
   for (const child of node.children) paint(child, grid);
 }
 
+// Marks every already-painted cell inside `rect` as reverse-video, so the
+// building currently under the navigation cursor (see navigate.js) stands
+// out from the rest of the city without changing its underlying colour.
+// Cells outside the grid (a stale or out-of-range rect) are skipped rather
+// than throwing, so a highlight never breaks the base render.
+function applyHighlight(grid, rect) {
+  if (!rect) return;
+
+  for (let row = rect.y; row < rect.y + rect.height; row++) {
+    if (row < 0 || row >= grid.length) continue;
+    for (let col = rect.x; col < rect.x + rect.width; col++) {
+      if (col < 0 || col >= grid[row].length) continue;
+      const cell = grid[row][col];
+      if (cell) grid[row][col] = { ...cell, reverse: true };
+    }
+  }
+}
+
+// The full SGR parameter string for a cell, or null for a blank (unpainted)
+// cell. Combining colour and reverse-video into one code lets the line
+// builder below batch escapes exactly like it already does for colour runs.
+function cellStyle(cell) {
+  if (!cell) return null;
+  return cell.reverse ? `${cell.color};7` : cell.color;
+}
+
 // Renders a laid-out tree (the output of `buildLayout`) into a single string:
 // `layout.height` lines joined by `\n`, each `layout.width` glyphs wide,
 // wrapped in ANSI colour escapes. Calling this repeatedly on the same layout
-// always produces exactly the same string.
-export function renderFrame(layout) {
+// and options always produces exactly the same string.
+//
+// `options.highlight`, if given, is a `{x, y, width, height}` rectangle
+// (absolute layout coordinates) drawn in reverse video — used to show the
+// current navigation selection without altering the layout itself.
+export function renderFrame(layout, options = {}) {
+  const { highlight } = options;
   const grid = Array.from({ length: layout.height }, () => new Array(layout.width).fill(null));
 
   paint(layout, grid);
+  applyHighlight(grid, highlight);
 
   return grid
     .map((row) => {
       let line = '';
-      let currentColor = null;
+      let currentStyle = null;
 
       for (const cell of row) {
-        const color = cell ? cell.color : null;
-        if (color !== currentColor) {
-          line += color ? `\x1b[${color}m` : RESET;
-          currentColor = color;
+        const style = cellStyle(cell);
+        if (style !== currentStyle) {
+          line += style ? `\x1b[${style}m` : RESET;
+          currentStyle = style;
         }
         line += cell ? cell.glyph : ' ';
       }
 
-      if (currentColor !== null) line += RESET;
+      if (currentStyle !== null) line += RESET;
       return line;
     })
     .join('\n');
