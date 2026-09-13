@@ -1,0 +1,16 @@
+SF:src/app.js
+LF:120
+LH:90
+end_of_record
+SF:src/utils/format.js
+LF:15
+LH:3
+end_of_record
+SF:src/utils/helpers.js
+LF:30
+LH:30
+end_of_record
+SF:test/app.test.js
+LF:50
+LH:50
+end_of_record
